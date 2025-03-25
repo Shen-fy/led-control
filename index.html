@@ -133,26 +133,35 @@
       const scrollSpeed = document.getElementById("scrollSpeed").value;
       const colorDelay = document.getElementById("colorDelay").value;
 
-      const data = "text=" + encodeURIComponent(text) +
-        "&colorMode=" + encodeURIComponent(colorMode) +
-        "&staticColor=" + encodeURIComponent(staticColor) +
-        "&scrollDelay=" + encodeURIComponent(scrollSpeed) +
-        "&colorDelay=" + encodeURIComponent(colorDelay);
+      const apiKey = "NV2YVMMXK8GFL4HL"; // 你的 ThingSpeak Write API Key
 
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/setText", true);
-      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+      const params = new URLSearchParams();
+      params.append("api_key", apiKey);
+      params.append("field1", text);
+      params.append("field2", scrollSpeed);
+      params.append("field3", colorMode);
+      params.append("field4", colorMode === "static" ? staticColor : colorDelay);
 
-      xhr.onreadystatechange = function () {
-        if (xhr.readyState == 4 && xhr.status == 200) {
-          document.getElementById("status").innerText = "✅ Uploaded! (アップロード成功)";
+      fetch("https://api.thingspeak.com/update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: params.toString()
+      })
+      .then(response => response.text())
+      .then(result => {
+        if (result === "0") {
+          document.getElementById("status").innerText = "❌ Upload Failed! (ThingSpeak 拒绝写入)";
+        } else {
+          document.getElementById("status").innerText = "✅ Uploaded! Entry ID: " + result;
           startCooldown();
-        } else if (xhr.readyState == 4) {
-          document.getElementById("status").innerText = "❌ Upload Failed! (失敗)";
         }
-      };
-
-      xhr.send(data);
+      })
+      .catch(error => {
+        console.error("Error uploading to ThingSpeak:", error);
+        document.getElementById("status").innerText = "❌ Network Error! (网络错误)";
+      });
     }
 
     function startCooldown() {
