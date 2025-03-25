@@ -125,25 +125,30 @@
         document.getElementById("colorSpeedDiv").style.display = "block";
       }
     });
-  
+
     function uploadSettings() {
       const text = document.getElementById("textInput").value;
       const colorMode = document.getElementById("colorMode").value;
       const staticColor = document.getElementById("staticColor").value.replace("#", "");
       const scrollSpeed = document.getElementById("scrollSpeed").value;
       const colorDelay = document.getElementById("colorDelay").value;
-  
-      const apiKey = "NV2YVMMXK8GFL4HL";  // 你的 ThingSpeak Write API Key
-  
+
+      if (!text.trim()) {
+        document.getElementById("status").innerText = "❌ Text cannot be empty!";
+        return;
+      }
+
+      const apiKey = "NV2YVMMXK8GFL4HL";  // ← 你的 ThingSpeak Write API Key
+
       const params = new URLSearchParams();
       params.append("api_key", apiKey);
       params.append("field1", text);
       params.append("field2", scrollSpeed);
       params.append("field3", colorMode);
       params.append("field4", colorMode === "static" ? staticColor : colorDelay);
-  
+
       console.log("👉 Sending to ThingSpeak:", params.toString());
-  
+
       fetch("https://api.thingspeak.com/update", {
         method: "POST",
         headers: {
@@ -165,13 +170,13 @@
         document.getElementById("status").innerText = "❌ Network Error! (网络错误)";
       });
     }
-  
+
     function startCooldown() {
       const btn = document.getElementById("uploadBtn");
       let wait = 5;
       btn.disabled = true;
       document.getElementById("status").innerText = `🕒 Please wait ${wait}s...`;
-  
+
       const interval = setInterval(() => {
         wait--;
         if (wait <= 0) {
@@ -183,6 +188,11 @@
         }
       }, 1000);
     }
-  </script>  
+
+    // 页面加载时自动设置颜色相关 UI 显示
+    window.addEventListener("DOMContentLoaded", function () {
+      document.getElementById("colorMode").dispatchEvent(new Event("change"));
+    });
+  </script>
 </body>
 </html>
