@@ -1,91 +1,176 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LED Display Control Panel</title>
+  <title>ESP32 LED Display / ESP32 LED ディスプレイ</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      padding: 20px;
       text-align: center;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
     }
-    h2 { margin-bottom: 10px; }
+    h2 { color: #333; padding: 10px; }
+
     input, select {
-      padding: 10px;
-      margin: 10px 0;
       width: 80%;
-      max-width: 400px;
+      padding: 10px;
       font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-top: 5px;
     }
-    label { display: block; font-weight: bold; margin-top: 15px; }
+
+    input[type="color"] {
+      width: 60px;
+      height: 60px;
+      padding: 0;
+      border: none;
+    }
+
+    input[type="range"] {
+      width: 70%;
+      margin: 10px auto;
+    }
+
+    label {
+      display: inline-block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    .inline {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin-top: 5px;
+    }
+
     button {
       padding: 10px 20px;
       font-size: 16px;
-      background: #28a745;
+      background-color: #28a745;
       color: white;
       border: none;
       border-radius: 5px;
-      margin-top: 20px;
       cursor: pointer;
+      margin-top: 10px;
     }
-    #status { margin-top: 20px; font-weight: bold; }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    button:hover:enabled {
+      background-color: #218838;
+    }
+
+    #staticColorDiv, #colorSpeedDiv {
+      display: none;
+    }
+
+    p {
+      font-size: 14px;
+      color: #666;
+    }
   </style>
 </head>
 <body>
-  <h2>LED Display Remote Controller</h2>
-  
-  <label for="text">Text to Display</label>
-  <input type="text" id="text" placeholder="HELLO WORLD">
 
-  <label for="scrollSpeed">Scroll Speed (ms)</label>
-  <input type="number" id="scrollSpeed" min="10" max="300" value="50">
+  <h2>ESP32 LED Display / ESP32 LED ディスプレイ</h2>
 
-  <label for="colorMode">Color Mode</label>
+  <p>Enter text to display. (表示する文字列を入力してください)</p>
+  <input type="text" id="textInput" placeholder="HELLO WORLD">
+
+  <label for="colorMode">Color Mode / カラーモード:</label>
   <select id="colorMode">
-    <option value="gradient">Gradient</option>
-    <option value="static">Static Color</option>
+    <option value="gradient">RGB Gradient / RGBグラデーション</option>
+    <option value="static">Fixed Color / 固定色</option>
   </select>
 
-  <label for="colorInput">Static Color (Hex, like FF0000)</label>
-  <input type="text" id="colorInput" placeholder="FF0000">
+  <div id="staticColorDiv" class="inline">
+    <label for="staticColor">Color / 色:</label>
+    <input type="color" id="staticColor" value="#FFFFFF">
+  </div>
 
-  <label for="colorDelay">Color Change Speed (ms, gradient only)</label>
-  <input type="number" id="colorDelay" min="10" max="200" value="20">
+  <div id="colorSpeedDiv">
+    <label for="colorDelay">Color Speed (ms) / 色変化速度:</label>
+    <input type="range" id="colorDelay" min="10" max="200" value="20" oninput="colorVal.innerText=this.value">
+    <span id="colorVal">20</span>
+  </div>
 
-  <button onclick="submitData()">Submit to ThingSpeak</button>
-  <div id="status"></div>
+  <label for="scrollSpeed">Scroll Speed (ms) / スクロール速度:</label>
+  <input type="range" id="scrollSpeed" min="10" max="200" value="50" oninput="scrollVal.innerText=this.value">
+  <span id="scrollVal">50</span>
+
+  <br><br>
+  <button id="uploadBtn" onclick="uploadSettings()">Upload to ESP32 (アップロード)</button>
+
+  <p id="status">Waiting for input... (入力待ち...)</p>
+
+  <p style="color:red; font-weight: bold;">
+    ⚠ This is a shared control interface. Avoid frequent submissions. (共有インターフェースです、連続操作を避けてください)
+  </p>
 
   <script>
-    const apiKey = "【在此填写你的 Write API Key】"; // 👈 重要：填你的写入 API Key
-    const channelID = "2891116"; // 👈 填你的通道 ID
+    document.getElementById("colorMode").addEventListener("change", function () {
+      if (this.value === "static") {
+        document.getElementById("staticColorDiv").style.display = "flex";
+        document.getElementById("colorSpeedDiv").style.display = "none";
+      } else {
+        document.getElementById("staticColorDiv").style.display = "none";
+        document.getElementById("colorSpeedDiv").style.display = "block";
+      }
+    });
 
-    function submitData() {
-      const text = document.getElementById("text").value;
-      const scroll = document.getElementById("scrollSpeed").value;
-      const mode = document.getElementById("colorMode").value;
-      const color = document.getElementById("colorInput").value || "FFFFFF";
-      const delay = document.getElementById("colorDelay").value;
+    function uploadSettings() {
+      const text = document.getElementById("textInput").value;
+      const colorMode = document.getElementById("colorMode").value;
+      const staticColor = document.getElementById("staticColor").value.replace("#", "");
+      const scrollSpeed = document.getElementById("scrollSpeed").value;
+      const colorDelay = document.getElementById("colorDelay").value;
 
-      const url = `https://api.thingspeak.com/update?api_key=${apiKey}` +
-                  `&field1=${encodeURIComponent(text)}` +
-                  `&field2=${encodeURIComponent(scroll)}` +
-                  `&field3=${encodeURIComponent(delay)}` +
-                  `&field4=${encodeURIComponent(mode === 'gradient' ? 'gradient' : color)}`;
+      const data = "text=" + encodeURIComponent(text) +
+        "&colorMode=" + encodeURIComponent(colorMode) +
+        "&staticColor=" + encodeURIComponent(staticColor) +
+        "&scrollDelay=" + encodeURIComponent(scrollSpeed) +
+        "&colorDelay=" + encodeURIComponent(colorDelay);
 
-      fetch(url)
-        .then(res => res.text())
-        .then(result => {
-          if (result > 0) {
-            document.getElementById("status").innerText = "✅ Update Successful!";
-          } else {
-            document.getElementById("status").innerText = "❌ Failed to update (API limit?)";
-          }
-        })
-        .catch(err => {
-          document.getElementById("status").innerText = "❌ Error: " + err;
-        });
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/setText", true);
+      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+          document.getElementById("status").innerText = "✅ Uploaded! (アップロード成功)";
+          startCooldown();
+        } else if (xhr.readyState == 4) {
+          document.getElementById("status").innerText = "❌ Upload Failed! (失敗)";
+        }
+      };
+
+      xhr.send(data);
+    }
+
+    function startCooldown() {
+      const btn = document.getElementById("uploadBtn");
+      let wait = 5;
+      btn.disabled = true;
+      document.getElementById("status").innerText = `🕒 Please wait ${wait}s...`;
+
+      const interval = setInterval(() => {
+        wait--;
+        if (wait <= 0) {
+          clearInterval(interval);
+          btn.disabled = false;
+          document.getElementById("status").innerText = "Ready to send again! (再送信できます)";
+        } else {
+          document.getElementById("status").innerText = `🕒 Please wait ${wait}s...`;
+        }
+      }, 1000);
     }
   </script>
 </body>
