@@ -127,49 +127,46 @@
     });
 
     function uploadSettings() {
-      const text = document.getElementById("textInput").value;
-      const colorMode = document.getElementById("colorMode").value;
-      const staticColor = document.getElementById("staticColor").value.replace("#", "");
-      const scrollSpeed = document.getElementById("scrollSpeed").value;
-      const colorDelay = document.getElementById("colorDelay").value;
+  const text = document.getElementById("textInput").value;
+  const colorMode = document.getElementById("colorMode").value;
+  const staticColor = document.getElementById("staticColor").value.replace("#", "");
+  const scrollSpeed = document.getElementById("scrollSpeed").value;
+  const colorDelay = document.getElementById("colorDelay").value;
 
-      if (!text.trim()) {
-        document.getElementById("status").innerText = "❌ Text cannot be empty!";
-        return;
+  if (!text.trim()) {
+    document.getElementById("status").innerText = "❌ Text cannot be empty!";
+    return;
+  }
+
+  const apiKey = "NV2YVMMXK8GFL4HL"; // 你的 ThingSpeak 写入 Key
+
+  const params = new URLSearchParams();
+  params.append("api_key", apiKey);
+  params.append("field1", text);
+  params.append("field2", scrollSpeed);
+  params.append("field3", colorMode);
+  params.append("field4", colorMode === "static" ? staticColor : colorDelay);
+
+  const url = `https://api.thingspeak.com/update?${params.toString()}`;
+
+  console.log("👉 Sending GET request to:", url);
+
+  fetch(url)
+    .then(response => response.text())
+    .then(result => {
+      if (result === "0") {
+        document.getElementById("status").innerText = "❌ Upload Failed! (ThingSpeak 拒绝写入)";
+      } else {
+        document.getElementById("status").innerText = "✅ Uploaded! Entry ID: " + result;
+        startCooldown();
       }
+    })
+    .catch(error => {
+      console.error("❌ Upload Error:", error);
+      document.getElementById("status").innerText = "❌ Network Error!";
+    });
+}
 
-      const apiKey = "NV2YVMMXK8GFL4HL";  // ← 你的 ThingSpeak Write API Key
-
-      const params = new URLSearchParams();
-      params.append("api_key", apiKey);
-      params.append("field1", text);
-      params.append("field2", scrollSpeed);
-      params.append("field3", colorMode);
-      params.append("field4", colorMode === "static" ? staticColor : colorDelay);
-
-      console.log("👉 Sending to ThingSpeak:", params.toString());
-
-      fetch("https://api.thingspeak.com/update", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: params.toString()
-      })
-      .then(response => response.text())
-      .then(result => {
-        if (result === "0") {
-          document.getElementById("status").innerText = "❌ Upload Failed! (ThingSpeak 拒绝写入)";
-        } else {
-          document.getElementById("status").innerText = "✅ Uploaded! Entry ID: " + result;
-          startCooldown();
-        }
-      })
-      .catch(error => {
-        console.error("❌ Error uploading to ThingSpeak:", error);
-        document.getElementById("status").innerText = "❌ Network Error! (网络错误)";
-      });
-    }
 
     function startCooldown() {
       const btn = document.getElementById("uploadBtn");
