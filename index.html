@@ -125,23 +125,25 @@
         document.getElementById("colorSpeedDiv").style.display = "block";
       }
     });
-
+  
     function uploadSettings() {
       const text = document.getElementById("textInput").value;
       const colorMode = document.getElementById("colorMode").value;
       const staticColor = document.getElementById("staticColor").value.replace("#", "");
       const scrollSpeed = document.getElementById("scrollSpeed").value;
       const colorDelay = document.getElementById("colorDelay").value;
-
-      const apiKey = "NV2YVMMXK8GFL4HL"; // 你的 ThingSpeak Write API Key
-
+  
+      const apiKey = "NV2YVMMXK8GFL4HL";  // 你的 ThingSpeak Write API Key
+  
       const params = new URLSearchParams();
       params.append("api_key", apiKey);
       params.append("field1", text);
       params.append("field2", scrollSpeed);
       params.append("field3", colorMode);
       params.append("field4", colorMode === "static" ? staticColor : colorDelay);
-
+  
+      console.log("👉 Sending to ThingSpeak:", params.toString());
+  
       fetch("https://api.thingspeak.com/update", {
         method: "POST",
         headers: {
@@ -159,17 +161,17 @@
         }
       })
       .catch(error => {
-        console.error("Error uploading to ThingSpeak:", error);
+        console.error("❌ Error uploading to ThingSpeak:", error);
         document.getElementById("status").innerText = "❌ Network Error! (网络错误)";
       });
     }
-
+  
     function startCooldown() {
       const btn = document.getElementById("uploadBtn");
       let wait = 5;
       btn.disabled = true;
       document.getElementById("status").innerText = `🕒 Please wait ${wait}s...`;
-
+  
       const interval = setInterval(() => {
         wait--;
         if (wait <= 0) {
@@ -181,6 +183,6 @@
         }
       }, 1000);
     }
-  </script>
+  </script>  
 </body>
 </html>
