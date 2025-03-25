@@ -138,7 +138,7 @@
         return;
       }
 
-      const apiKey = "NV2YVMMXK8GFL4HL";
+      const apiKey = "RADILY6MGJ8P0XSF";
       const field1 = encodeURIComponent(text);
       const field2 = encodeURIComponent(scrollSpeed);
       const field3 = encodeURIComponent(colorMode);
@@ -152,7 +152,7 @@
         .then(response => response.text())
         .then(result => {
           if (result === "0") {
-            document.getElementById("status").innerText = "❌ Upload Failed! (ThingSpeak 拒绝写入)";
+            document.getElementById("status").innerText = "❌ Upload Failed! (ThingSpeak 写入拒绝)";
           } else {
             document.getElementById("status").innerText = "✅ Uploaded! Entry ID: " + result;
             startCooldown();
