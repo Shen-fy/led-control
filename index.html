@@ -97,12 +97,12 @@
   </div>
 
   <div id="colorSpeedDiv">
-    <label for="colorDelay">Color Speed (ms) / 色変化速度:</label>
+    <label for="colorDelay">Color Change Speed (ms) / 色変化間隔:</label>
     <input type="range" id="colorDelay" min="10" max="200" value="20" oninput="colorVal.innerText=this.value">
     <span id="colorVal">20</span>
   </div>
 
-  <label for="scrollSpeed">Scroll Speed (ms) / スクロール速度:</label>
+  <label for="scrollSpeed">Scroll Interval (ms) / スクロール間隔:</label>
   <input type="range" id="scrollSpeed" min="10" max="200" value="50" oninput="scrollVal.innerText=this.value">
   <span id="scrollVal">50</span>
 
@@ -127,42 +127,55 @@
     });
 
     function uploadSettings() {
-      const text = document.getElementById("textInput").value.trim();
-      const colorMode = document.getElementById("colorMode").value;
-      const staticColor = document.getElementById("staticColor").value.replace("#", "");
-      const scrollSpeed = document.getElementById("scrollSpeed").value;
-      const colorDelay = document.getElementById("colorDelay").value;
+  const text = document.getElementById("textInput").value.trim();
+  const colorMode = document.getElementById("colorMode").value;
+  const staticColor = document.getElementById("staticColor").value.replace("#", "");
+  const scrollSpeed = document.getElementById("scrollSpeed").value;
+  const colorDelay = document.getElementById("colorDelay").value;
 
-      if (!text) {
-        document.getElementById("status").innerText = "❌ Text cannot be empty!";
-        return;
+  if (!text) {
+    document.getElementById("status").innerText = "❌ Text cannot be empty!";
+    return;
+  }
+
+  const apiKey = "RADILY6MGJ8P0XSF";
+  // 正确的字段映射：
+  // field1: 显示文本
+  // field2: 滚动速度
+  // field3: 颜色变换速度
+  // field4: 颜色模式 ("gradient" 或 "static")
+  // field5: （仅当 static 时）固定颜色值，例如 "ff0000"
+  const field1 = encodeURIComponent(text);
+  const field2 = encodeURIComponent(scrollSpeed);
+  const field3 = encodeURIComponent(colorDelay);
+  const field4 = encodeURIComponent(colorMode);
+
+  let url = `https://api.thingspeak.com/update?api_key=${apiKey}&field1=${field1}&field2=${field2}&field3=${field3}&field4=${field4}`;
+  
+  // 当选择固定色时，额外上传 field5
+  if (colorMode === "static") {
+    const field5 = encodeURIComponent(staticColor);
+    url += `&field5=${field5}`;
+  }
+
+  console.log("👉 Sending GET request to:", url);
+
+  fetch(url)
+    .then(response => response.text())
+    .then(result => {
+      if (result === "0") {
+        document.getElementById("status").innerText = "❌ Upload Failed! (ThingSpeak 写入拒绝)";
+      } else {
+        document.getElementById("status").innerText = "✅ Uploaded! Entry ID: " + result;
+        startCooldown();
       }
+    })
+    .catch(error => {
+      console.error("❌ Upload Error:", error);
+      document.getElementById("status").innerText = "❌ Network Error!";
+    });
+}
 
-      const apiKey = "RADILY6MGJ8P0XSF";
-      const field1 = encodeURIComponent(text);
-      const field2 = encodeURIComponent(scrollSpeed);
-      const field3 = encodeURIComponent(colorMode);
-      const field4 = encodeURIComponent(colorMode === "static" ? staticColor : colorDelay);
-
-      const url = `https://api.thingspeak.com/update?api_key=${apiKey}&field1=${field1}&field2=${field2}&field3=${field3}&field4=${field4}`;
-
-      console.log("👉 Sending GET request to:", url);
-
-      fetch(url)
-        .then(response => response.text())
-        .then(result => {
-          if (result === "0") {
-            document.getElementById("status").innerText = "❌ Upload Failed! (ThingSpeak 写入拒绝)";
-          } else {
-            document.getElementById("status").innerText = "✅ Uploaded! Entry ID: " + result;
-            startCooldown();
-          }
-        })
-        .catch(error => {
-          console.error("❌ Upload Error:", error);
-          document.getElementById("status").innerText = "❌ Network Error!";
-        });
-    }
 
     function startCooldown() {
       const btn = document.getElementById("uploadBtn");
